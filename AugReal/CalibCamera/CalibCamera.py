@@ -41,10 +41,10 @@ for fname in images:
 		corners2 = cv2.cornerSubPix(gray, corners,(11,11), (-1,-1), criteria)
 		imgpoints.append(corners)
 
-		##display images 
-		##cv2.drawChessboardCorners(img, (7,6), corners, ret)
-		##cv2.imshow('img',img)
-		##cv2.waitKey(5000)
+		## display images 
+		## cv2.drawChessboardCorners(img, (7,6), corners, ret)
+		## cv2.imshow('img',img)
+		## cv2.waitKey(5000)
 
 
 ## insert explanation of calibcamera here 		
