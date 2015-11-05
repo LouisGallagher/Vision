@@ -39,7 +39,7 @@ def calib_loop():
 	global frame
 	global corners
 	global count 
-	
+
 	## set up video capture
 	cap = cv2.VideoCapture(0) 
 	
@@ -55,8 +55,8 @@ def calib_loop():
 			cv2.drawChessboardCorners(frame, (6, 5), corners, corners_ret)
 			cv2.putText(frame, "captured: {0}/10".format(count), (0,30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255))
 			cv2.imshow('calib', frame)
-			#if cv2.waitKey(1000) ==  32:
-			camera_calibrator()
+			if corners_ret == True and cv2.waitKey(200) ==  32:
+				camera_calibrator()
 
 
 def main(argv):
