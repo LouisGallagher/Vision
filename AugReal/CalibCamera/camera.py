@@ -41,10 +41,10 @@ def eulerToR(alpha, beta, gamma):
 def expToR(w1, w2, w3):		
 	identity = np.identity(3)													   # 3 space identity matrix
 	wHat = np.array([[0, -1 * w3 , w2], [w3, 0, -1 * w1], [-1 * w2, w1, 0]])
-	wMagnitude = np.linalg.norm(np.array([[w1, w2, w3]]))   
+	wMagnitude = np.linalg.norm(np.array([[w1, w2, w3]]))   					   # the magnitude of the vector w
 		
 	return identity + ((wHat / wMagnitude) * m.sin(m.radians(wMagnitude))) + \
-	((np.dot(wHat, wHat) / pow(wMagnitude, 2)) * (1 - m.cos(m.radians(wMagnitude))))
+	((np.dot(wHat, wHat) / pow(wMagnitude, 2)) * (1 - m.cos(m.radians(wMagnitude))))	# Rodriguez formula for computing rotation matrix
 
 
 
