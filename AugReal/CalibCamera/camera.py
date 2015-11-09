@@ -80,3 +80,20 @@ def expToT(X, Y, Z, w1, w2, w3):
 	T = np.append(T,np.array([[0, 0, 0, 1]]), 0)
 
 	return T
+
+#----------------------end rigid body transformations-----------------------------
+
+#----------------------section: Camera matrix--------------------------------------
+
+# function takes the intrinsic parameters of a camera and returns a perspective projection matrix for the camera
+#
+# parameters:
+# f - the focal length of the camera
+# k,l - scale factor relating retinal to image coordinates
+# u0, v0 - represent the principal point 
+
+def intrinsicsToK(f, k, l, u0, v0):
+		return np.array([[f * k, 0, u0 , 0], [0, f * l, v0 , 0], [0, 0, 1, 0])
+
+
+def simulateCamera():
