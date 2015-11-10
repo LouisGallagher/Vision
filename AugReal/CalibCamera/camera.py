@@ -93,7 +93,20 @@ def expToT(X, Y, Z, w1, w2, w3):
 # u0, v0 - represent the principal point 
 
 def intrinsicsToK(f, k, l, u0, v0):
-		return np.array([[f * k, 0, u0 , 0], [0, f * l, v0 , 0], [0, 0, 1, 0])
+		return np.array([[f * k, 0, u0 , 0], [0, f * l, v0 , 0], [0, 0, 1, 0]])
 
 
 def simulateCamera():
+	imagePlane = np.array([[[255 for i in range(3)] for x in range(640)] for y in range(480)])
+	K  = intrinsicsToK(3, 1, 1, 320, -240)
+	l1 = np.array([[i, 1, 0] for i in range(2000)])
+	l2 = np.array([[i, 0, 0] for i in range(2000)])
+	l3 = np.array([[i,-1, 0] for i in range(2000)])
+
+	for p in l1:
+		T = eulerToT(p[0], p[1] , p[2], 0, 0, 0)
+		M = np.dot(K, T)
+		pWrl = np.array([[i, 1, 0, 1]])
+		pImage = np.dot(M, pWrl.T)
+		imagePlane[int(pImage[0]), int(pImage[1])] = [0,0,255]
+	cv2.imwrite('imPlane.jpg', imagePlane)
