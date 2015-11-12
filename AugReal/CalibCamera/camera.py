@@ -15,12 +15,12 @@ def eulerToR(alpha, beta, gamma):
 	alphaRad, betaRad, gammaRad = np.radians(([alpha, beta, gamma])) # convert degrees to radians
 	
 	## perform trig functions
-	cosAlpha = m.cos(alphaRad)
-	sinAlpha = m.sin(alphaRad)
-	cosBeta  = m.cos(betaRad)
-	sinBeta  = m.sin(betaRad)
-	cosGamma = m.cos(gammaRad)
-	sinGamma = m.sin(gammaRad)
+	cosAlpha = int((m.cos(alphaRad)))
+	sinAlpha = int((m.sin(alphaRad)))
+	cosBeta  = int((m.cos(betaRad)))
+	sinBeta  = int((m.sin(betaRad)))
+	cosGamma = int((m.cos(gammaRad)))
+	sinGamma = int((m.sin(gammaRad)))
 	
 	# compute rotation matrices for rotating about x, y and z axes 
 	rx = np.array([[1, 0, 0], [0, cosAlpha, -1 * sinAlpha], [0, sinAlpha, cosAlpha]])  
@@ -96,17 +96,42 @@ def intrinsicsToK(f, k, l, u0, v0):
 		return np.array([[f * k, 0, u0 , 0], [0, f * l, v0 , 0], [0, 0, 1, 0]])
 
 
-def simulateCamera():
-	imagePlane = np.array([[[255 for i in range(3)] for x in range(640)] for y in range(480)])
-	K  = intrinsicsToK(3, 1, 1, 320, -240)
-	l1 = np.array([[i, 1, 0] for i in range(2000)])
-	l2 = np.array([[i, 0, 0] for i in range(2000)])
-	l3 = np.array([[i,-1, 0] for i in range(2000)])
+def simulateCamera(f, h, d, ch):
+	imagePlane = np.array([[[255 for i in range(3)] for x in range(h)] for y in range(d)])
+	K  = intrinsicsToK(f, 1, 1,-1 * int(h/2),  -1 * int(d/2) )
+	K = np.delete(K, (-1), axis = 1)
+	T = eulerToT(0, 0 , ch, 0, 90, -90)
+	T = np.delete(T, (-1), axis = 0)
+	M = np.dot(K, T)
+	M = np.delete(M, (2), axis = 1)
+	
+	
+	for i in range(1000):
+		pl1Image = np.dot(M, np.array([[i,1,1]]).T)
+		pl2Image = np.dot(M, np.array([[i,0,1]]).T)
+		pl3Image = np.dot(M, np.array([[i,-1,1]]).T)
+		x1im, y1im = [int(x / pl1Image[2]) for x in pl1Image[:2]]
+		x2im, y2im = [int(x / pl2Image[2]) for x in pl2Image[:2]]
+		x3im, y3im = [int(x / pl3Image[2]) for x in pl3Image[:2]]
 
-	for p in l1:
-		T = eulerToT(p[0], p[1] , p[2], 0, 0, 0)
-		M = np.dot(K, T)
-		pWrl = np.array([[i, 1, 0, 1]])
-		pImage = np.dot(M, pWrl.T)
-		imagePlane[int(pImage[0]), int(pImage[1])] = [0,0,255]
-	cv2.imwrite('imPlane.jpg', imagePlane)
+		if (-1 * h) <= y1im < h and (-1 * d) <= x1im< d:	 		
+			imagePlane[y1im , x1im] = [255,0,0]
+
+		if (-1 * h) <= y2im < h and (-1 * d) <= x2im< d:	 		
+			imagePlane[y2im , x2im] = [0,255,0]
+
+		if (-1 * h) <= y3im < h and (-1 * d) <= x3im< d:	 		
+			imagePlane[y3im , x3im] = [0,0,255]
+	
+	# imname = 'implane_{0}_{1}_{2}_{3}.jpg'.format(f, h, d, ch)
+	# cv2.imwrite(imname, imagePlane)
+	return imagePlane
+
+def runSim():
+	f = 1
+	while f <= 400:
+		im = simulateCamera(f, 480, 360, 200)
+		imname = 'seq\implane_{0}_{1}_{2}_{3}.jpg'.format(f, 480, 360, 200)
+		cv2.imwrite(imname, im)
+		#cv2.imshow('img' , im)
+		f += 10
