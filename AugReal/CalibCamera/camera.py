@@ -15,12 +15,12 @@ def eulerToR(alpha, beta, gamma):
 	alphaRad, betaRad, gammaRad = np.radians(([alpha, beta, gamma])) # convert degrees to radians
 	
 	## perform trig functions
-	cosAlpha = int((m.cos(alphaRad)))
-	sinAlpha = int((m.sin(alphaRad)))
-	cosBeta  = int((m.cos(betaRad)))
-	sinBeta  = int((m.sin(betaRad)))
-	cosGamma = int((m.cos(gammaRad)))
-	sinGamma = int((m.sin(gammaRad)))
+	cosAlpha = int(m.degrees(m.cos(alphaRad)))
+	sinAlpha = int(m.degrees(m.sin(alphaRad)))
+	cosBeta  = int(m.degrees(m.cos(betaRad)))
+	sinBeta  = int(m.degrees(m.sin(betaRad)))
+	cosGamma = int(m.degrees(m.cos(gammaRad)))
+	sinGamma = int(m.degrees(m.sin(gammaRad)))
 	
 	# compute rotation matrices for rotating about x, y and z axes 
 	rx = np.array([[1, 0, 0], [0, cosAlpha, -1 * sinAlpha], [0, sinAlpha, cosAlpha]])  
@@ -57,9 +57,9 @@ def expToR(w1, w2, w3):
 # X, Y, Z is the point in the world coordinate system 
 # alpha, beta, gamma;  the angles of rotation about the x, y and z axes respectively (see funtion eulerToR for more information)
 def eulerToT(X, Y, Z, alpha, beta, gamma):
-	pwrl = np.array([[X, Y, Z]]).T
+	t = np.array([[X, Y, Z]]).T
 	r = eulerToR(alpha, beta, gamma)
-	T = np.append(r, pwrl, 1)
+	T = np.append(r, t, 1)
 	T = np.append(T,np.array([[0, 0, 0, 1]]), 0)
 
 	return T
@@ -74,9 +74,9 @@ def eulerToT(X, Y, Z, alpha, beta, gamma):
 # X, Y, Z is the point in the world coordinate system 
 # w1, w2, w3 : the vector about which the rotation is performed (see function expToR for more details)
 def expToT(X, Y, Z, w1, w2, w3):
-	pwrl = np.array([[X, Y, Z]]).T
+	t = np.array([[X, Y, Z]]).T
 	r = expToR(w1, w2, w3)
-	T = np.append(r, pwrl, 1)
+	T = np.append(r, t, 1)
 	T = np.append(T,np.array([[0, 0, 0, 1]]), 0)
 
 	return T
@@ -85,7 +85,7 @@ def expToT(X, Y, Z, w1, w2, w3):
 
 #----------------------section: Camera matrix--------------------------------------
 
-# function takes the intrinsic parameters of a camera and returns a perspective projection matrix for the camera
+# function takes the intrinsic parameters of a camera and returns a perspective projection matrix for the camera in homogeneous form 
 #
 # parameters:
 # f - the focal length of the camera
@@ -97,41 +97,39 @@ def intrinsicsToK(f, k, l, u0, v0):
 
 
 def simulateCamera(f, h, d, ch):
-	imagePlane = np.array([[[255 for i in range(3)] for x in range(h)] for y in range(d)])
-	K  = intrinsicsToK(f, 1, 1,-1 * int(h/2),  -1 * int(d/2) )
-	K = np.delete(K, (-1), axis = 1)
+	imagePlane = np.array([[[255 for i in range(3)] for x in range(h)] for y in range(d)], dtype = np.uint8)
+	K  = intrinsicsToK(f, 1, 1,  int(h/2), int(d/2) ) ##something not right with h and d  
+	#K = np.delete(K, (-1), axis = 1)
 	T = eulerToT(0, 0 , ch, 0, 90, -90)
-	T = np.delete(T, (-1), axis = 0)
+	#T = np.delete(T, (-1), axis = 0)
 	M = np.dot(K, T)
-	M = np.delete(M, (2), axis = 1)
+	#M = np.delete(M, (2), axis = 1)
 	
 	
 	for i in range(1000):
-		pl1Image = np.dot(M, np.array([[i,1,1]]).T)
-		pl2Image = np.dot(M, np.array([[i,0,1]]).T)
-		pl3Image = np.dot(M, np.array([[i,-1,1]]).T)
+		pl1Image = np.dot(M, np.array([[i,1,0,1]]).T)
+		pl2Image = np.dot(M, np.array([[i,-1,0,1]]).T)
+		pl3Image = np.dot(M, np.array([[i,0,0,1]]).T)
 		x1im, y1im = [int(x / pl1Image[2]) for x in pl1Image[:2]]
 		x2im, y2im = [int(x / pl2Image[2]) for x in pl2Image[:2]]
 		x3im, y3im = [int(x / pl3Image[2]) for x in pl3Image[:2]]
 
-		if (-1 * h) <= y1im < h and (-1 * d) <= x1im< d:	 		
+		if 0 <= y1im < h and 0<= x1im < d:	 		
 			imagePlane[y1im , x1im] = [255,0,0]
 
-		if (-1 * h) <= y2im < h and (-1 * d) <= x2im< d:	 		
-			imagePlane[y2im , x2im] = [0,255,0]
+		if 0 <= y2im < h and 0 <= x2im< d:	 		
+			imagePlane[y2im , x2im] = [0,0,255]
 
-		if (-1 * h) <= y3im < h and (-1 * d) <= x3im< d:	 		
-			imagePlane[y3im , x3im] = [0,0,255]
+		# if 0 <= y3im < h and 0 <= x3im< d:	 		
+		# 	imagePlane[y3im , x3im] = [0,0,255]	
 	
-	# imname = 'implane_{0}_{1}_{2}_{3}.jpg'.format(f, h, d, ch)
-	# cv2.imwrite(imname, imagePlane)
 	return imagePlane
 
 def runSim():
 	f = 1
-	while f <= 400:
-		im = simulateCamera(f, 480, 360, 200)
-		imname = 'seq\implane_{0}_{1}_{2}_{3}.jpg'.format(f, 480, 360, 200)
-		cv2.imwrite(imname, im)
-		#cv2.imshow('img' , im)
+	while cv2.waitKey(2000) != ord('q'):
+		im = simulateCamera(f, 480, 360, -2000)
+		cv2.imshow('img' , im)
 		f += 10
+
+	cv2.destroyAllWindows()
