@@ -94,68 +94,38 @@ def intrinsicsToK(f, k, l, u0, v0):
 		return np.array([[f * k, 0, u0 , 0], [0, f * l, v0 , 0], [0, 0, 1, 0]])
 
 
-# def simulateCamera(f, h, d, ch):
-# 	imagePlane = np.array([[[255 for i in range(3)] for x in range(h)] for y in range(d)], dtype = np.uint8)
-# 	K  = intrinsicsToK(f, 1, 1,  int(h/2), int(d/2) ) ##something not right with h and d  
-# 	#K = np.delete(K, (-1), axis = 1)
-# 	T = eulerToT(0, 0 , ch, 0, 90, -90)
-# 	#T = np.delete(T, (-1), axis = 0)
-# 	M = np.dot(K, T)
-# 	#M = np.delete(M, (2), axis = 1)
-	
-	
-# 	for i in range(1000):
-# 		pl1Image = np.dot(M, np.array([[i,1,0,1]]).T)
-# 		pl2Image = np.dot(M, np.array([[i,-1,0,1]]).T)
-# 		pl3Image = np.dot(M, np.array([[i,0,0,1]]).T)
-# 		x1im, y1im = [int(x / pl1Image[2]) for x in pl1Image[:2]]
-# 		x2im, y2im = [int(x / pl2Image[2]) for x in pl2Image[:2]]
-# 		x3im, y3im = [int(x / pl3Image[2]) for x in pl3Image[:2]]
-
-# 		if 0 <= y1im < h and 0<= x1im < d:	 		
-# 			imagePlane[y1im , x1im] = [255,0,0]
-
-# 		if 0 <= y2im < h and 0 <= x2im< d:	 		
-# 			imagePlane[y2im , x2im] = [0,0,255]
-
-# 		if 0 <= y3im < h and 0 <= x3im< d:	 		
-# 			imagePlane[y3im , x3im] = [0,0,255]	
-	
-# 	return imagePlane
-
-
-
-def simulateCamera():
-	T = eulerToT(0, 0, -20, 0, np.pi/2, -1 * (np.pi/2))	
-	K = intrinsicsToK(500, 1, 1, 0, 0)
+def simulateCamera(f, k, l, u0, v0, h):
+	T = eulerToT(0, 0, h, 0, np.pi/2, -1 * (np.pi/2))	
+	K = intrinsicsToK(f, k, l, u0, v0)
 	M = K.dot(T)
 	M = np.delete(M, (2), axis = 1)
-	
 	fig = plt.figure()
 	ax = fig.gca() 
 
-	for i in range(100):
-		p1 = M.dot(np.array([[i, 1, 1]]).T)
-		p2 = M.dot(np.array([[i, 0, 1]]).T)
-		p3 = M.dot(np.array([[i, -1, 1]]).T)
-		ax.plot(p1[0]/p1[2],p1[1]/p1[2],'r.')
-		ax.plot(p2[0]/p2[2],p2[1]/p2[2],'k.')
-		ax.plot(p3[0]/p3[2],p3[1]/p3[2],'g.')
+	l1 = M.dot(np.hstack([np.array([[i,1,1]]).T for i in range(1000)]))
+	l2 = M.dot(np.hstack([np.array([[i,0,1]]).T for i in range(1000)]))
+	l3 = M.dot(np.hstack([np.array([[i,-1,1]]).T for i in range(1000)]))
+		
+	ax.plot(l1[0,:] / l1[2,:], l1[1,:] /l1[2,:], 'r.')
+	ax.plot(l2[0,:] / l2[2,:], l2[1,:] /l2[2,:], 'b.')
+	ax.plot(l3[0,:] / l3[2,:], l3[1,:] /l3[2,:], 'g.')
 
-	
-	
-
-	# # e1 = np1.hstack(np.array([[i, 1, 1]]).T for i in range(10))
-	# # e2 = np.hstack(np.array([[i, 0, 1]]).T for i in range(10))
-	# # e3 = np.hstack(np.array([[i, -1, 1]]).T for i in range(10))
-
-	
-	# i1 = M.dot(e1)
-	# i2 = M.dot(e2)
-	# i3 = M.dot(e3)
-
-
-	
-	# ax.plot(p1[0]/p1[2],p1[1]/p1[2],'r.')
 	plt.show()
 
+def calibrateCamera3D(data):
+	data = np.loadtxt(data)
+	Pwrl = np.array(data[:, :3])
+	Pim = np.array(data[:, 3:])
+	constraintMatrix  = np.array([[]])
+
+	# convert im points to homogeneuous coordinates 
+	col = np.array([[1 for x in range(len(Pim))]]).T
+	Pim = np.append(Pim,col,1) 
+	
+	# add the constraints
+	for i in range(len(Pwrl)):
+		constraint = np.array([[Pwrl[:, :], 0, ] , [0, Pwrl[:, :] ]])
+		np.append(constraints, constraint, 0)
+
+	# solve for x using linear least squares   
+	M = numpy.linalg.lstsq(constraints, np.array[[0 for x in range()]].T)
