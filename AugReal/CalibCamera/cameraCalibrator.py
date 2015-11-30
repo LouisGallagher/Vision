@@ -58,6 +58,38 @@ def calib_loop():
 			if corners_ret == True and cv2.waitKey(200) ==  32:
 				camera_calibrator()
 
+	cap.release()
+
+def computeHomography(mtx, dist, newcamermtx, x, y, w, h):
+	global frame_ret 
+	global corners_ret
+	global frame
+	global corners
+	global count 
+
+	## set up video capture
+	cap = cv2.VideoCapture(0) 
+	
+	if not(cap.isOpened()):
+		cap.open()	
+
+	while cv2.waitKey(5) != ord('q'): 
+		frame_ret, frame = cap.read()
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+		if frame_ret == True:
+			corners_ret, corners = cv2.findChessboardCorners(gray, (6, 5), None)
+			if corners_ret == True:
+				gray = cv2.undistort(gray, mtx, dist, None, newcamermtx)
+				gray = gray[y:y+h, x:x+w]
+				# r, homog =cv2.findHomography(corners, dst)
+				# if r:
+				# 	cap.release() 
+				# 	return homog
+				
+			cv2.imshow("undistorted image", dst)
+
+	cap.release()
 
 def main(argv):
 	global count 
@@ -88,6 +120,9 @@ def main(argv):
 		ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, d, None, None)
 
 		newcamermtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, d, 1, d )
+		x,y,w,h = roi
+		#mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcamermtx, (w,h), cv2.CV_32FC2)
+		homog = computeHomography(mtx, dist, newcamermtx, x, y, w, h)
 
 	cv2.destroyAllWindows()
 

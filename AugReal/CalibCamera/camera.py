@@ -1,6 +1,7 @@
 import cv2, numpy as np 
 import math as m
 import matplotlib.pyplot as plt
+from scipy.spatial import distance
 
 #-----------Section: Rigid body transformations-----------#
 
@@ -95,17 +96,17 @@ def intrinsicsToK(f, k, l, u0, v0):
 
 
 def simulateCamera(f, k, l, u0, v0, h):
-	T = eulerToT(0, 0, h, 0, np.pi/2, -1 * (np.pi/2))	
-	K = intrinsicsToK(f, k, l, u0, v0)
-	M = K.dot(T)
-	M = np.delete(M, (2), axis = 1)
+	T = eulerToT(0, 0, h, 0, np.pi/2, -1 * (np.pi/2))	# Transformation matrix
+	K = intrinsicsToK(f, k, l, u0, v0)     				# intrinsics
+	M = K.dot(T)										
+	M = np.delete(M, (2), axis = 1)						# no need for z column as z = 0 always
 	fig = plt.figure()
 	ax = fig.gca() 
 
-	l1 = M.dot(np.hstack([np.array([[i,1,1]]).T for i in range(1000)]))
-	l2 = M.dot(np.hstack([np.array([[i,0,1]]).T for i in range(1000)]))
-	l3 = M.dot(np.hstack([np.array([[i,-1,1]]).T for i in range(1000)]))
-		
+	l1 = M.dot(np.hstack([np.array([[i,1,1]]).T for i in range(10000)]))  # generate line 1 
+	l2 = M.dot(np.hstack([np.array([[i,0,1]]).T for i in range(10000)]))  # generate line 2
+	l3 = M.dot(np.hstack([np.array([[i,-1,1]]).T for i in range(10000)])) # generate line 3
+	
 	ax.plot(l1[0,:] / l1[2,:], l1[1,:] /l1[2,:], 'r.')
 	ax.plot(l2[0,:] / l2[2,:], l2[1,:] /l2[2,:], 'b.')
 	ax.plot(l3[0,:] / l3[2,:], l3[1,:] /l3[2,:], 'g.')
@@ -116,16 +117,52 @@ def calibrateCamera3D(data):
 	data = np.loadtxt(data)
 	Pwrl = np.array(data[:, :3])
 	Pim = np.array(data[:, 3:])
-	constraintMatrix  = np.array([[]])
 
 	# convert im points to homogeneuous coordinates 
 	col = np.array([[1 for x in range(len(Pim))]]).T
-	Pim = np.append(Pim,col,1) 
-	
-	# add the constraints
-	for i in range(len(Pwrl)):
-		constraint = np.array([[Pwrl[:, :], 0, ] , [0, Pwrl[:, :] ]])
-		np.append(constraints, constraint, 0)
+	Pwrl = np.append(Pwrl,col,1) 
 
-	# solve for x using linear least squares   
-	M = numpy.linalg.lstsq(constraints, np.array[[0 for x in range()]].T)
+	#build constraint matrix
+	constraintMatrix = np.vstack([np.vstack(([np.append(np.append(Pwrl[i], np.array([0,0,0,0]), 0), -1*Pim[i,0] * Pwrl[i], 0)], \
+		[np.append(np.append(np.array([0,0,0,0]) ,Pwrl[i], 0), -1*Pim[i,1] * Pwrl[i], 0)])) for i in range(Pwrl.shape[0])])
+	
+	#optimal answer is eigenvector for smallest eigenvalue
+	D, V = np.linalg.eig(constraintMatrix.T.dot(constraintMatrix))	
+
+	return np.reshape(V[:, 11], (3,4))  # reshape into 3*4 camera matrix
+
+
+def visualiseCameraCalibration3D(data, p):
+	# show original 2D points
+	fig = plt.figure()
+	ax = fig.gca()
+	ax.plot(data[:,3], data[:,4],'r.')
+	
+	Pwrl = data[:, :3]
+	Pwrl = np.append(Pwrl , np.array([[1 for x in range(data.shape[0])]]).T, 1).T
+	
+	# show reprojected 2D points 
+	Pim = p.dot(Pwrl)
+	
+	ax.plot(Pim[0,:] / Pim[2,:], Pim[1,:] / Pim[2,:], 'b.')
+
+	plt.show()
+
+def evaluateCameraCalibration3D(data, p):
+	Pwrl = data[:, :3]
+	Pwrl = np.append(Pwrl , np.array([[1 for x in range(data.shape[0])]]).T, 1).T
+	
+	# show reprojected 2D points 
+	reprojectedPim = p.dot(Pwrl)
+	
+	reprojectedPim = np.array([reprojectedPim[1, :] / reprojectedPim[2, :], reprojectedPim[1, :] /reprojectedPim[2, :]]).T
+	
+	print data[0]
+	distances = np.array([[distance.euclidean(reprojectedPim[i, :], data[i, 3:])] for i in range(reprojectedPim.shape[0])]) #distance.cdist(reprojectedPim, data[:,3:], 'euclidean')
+	print distances
+
+	print np.mean(distances)
+	print np.var(distances)
+	print np.min(distances)
+	print np.max(distances)
+
