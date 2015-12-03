@@ -126,6 +126,7 @@ def calibrateCamera3D(data):
 	constraintMatrix = np.vstack([np.vstack(([np.append(np.append(Pwrl[i], np.array([0,0,0,0]), 0), -1*Pim[i,0] * Pwrl[i], 0)], \
 		[np.append(np.append(np.array([0,0,0,0]) ,Pwrl[i], 0), -1*Pim[i,1] * Pwrl[i], 0)])) for i in range(Pwrl.shape[0])])
 	
+	
 	#optimal answer is eigenvector for smallest eigenvalue
 	D, V = np.linalg.eig(constraintMatrix.T.dot(constraintMatrix))	
 
@@ -155,11 +156,10 @@ def evaluateCameraCalibration3D(data, p):
 	# show reprojected 2D points 
 	reprojectedPim = p.dot(Pwrl)
 	
-	reprojectedPim = np.array([reprojectedPim[1, :] / reprojectedPim[2, :], reprojectedPim[1, :] /reprojectedPim[2, :]]).T
+	reprojectedPim = np.array([reprojectedPim[0, :] / reprojectedPim[2, :], reprojectedPim[1, :] /reprojectedPim[2, :]]).T
 	
-	print data[0]
-	distances = np.array([[distance.euclidean(reprojectedPim[i, :], data[i, 3:])] for i in range(reprojectedPim.shape[0])]) #distance.cdist(reprojectedPim, data[:,3:], 'euclidean')
-	print distances
+	# euclidean distance between points in the reprojected image and the actual points
+	distances = np.array([[distance.euclidean(reprojectedPim[i, :2], data[i, 3:])] for i in range(reprojectedPim.shape[0])]) 
 
 	print np.mean(distances)
 	print np.var(distances)
