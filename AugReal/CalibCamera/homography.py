@@ -79,8 +79,8 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 
 
 	board = cv2.imread('Data\pattern.png', cv2.CV_LOAD_IMAGE_GRAYSCALE)
-	im = cv2.imread('Data\color.jpg')
-	corners_ret, corners = cv2.findChessboardCorners(board, (Height, Width), None)
+	im = cv2.imread('Data\space.jpg') #paramterise this 
+ 	corners_ret, corners = cv2.findChessboardCorners(board, (Height, Width), None)
 	
 	# set up video capture
 	cap = cv2.VideoCapture(0) 
@@ -103,7 +103,7 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 
 				if corners2_ret:
 					h = cv2.findHomography(corners, corners2)[0]
-					out = cv2.warpPerspective(im, h,(gray.shape[1], gray.shape[0]))
+					out	 = cv2.warpPerspective(im, h,(gray.shape[1], gray.shape[0]))
 					
 					gray_out = cv2.cvtColor(out,cv2.COLOR_BGR2GRAY)
 					#neg_out = cv2.bitwise_not(gray_out)
