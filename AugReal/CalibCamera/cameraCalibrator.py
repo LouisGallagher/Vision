@@ -80,7 +80,6 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 
 	board = cv2.imread('Data\pattern.png', cv2.CV_LOAD_IMAGE_GRAYSCALE)
 	im = cv2.imread('Data\color.jpg')
-	cv2.imshow('im', im)
 	corners_ret, corners = cv2.findChessboardCorners(board, (Height, Width), None)
 	
 	# set up video capture
@@ -105,22 +104,24 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 				if corners2_ret:
 					h = cv2.findHomography(corners, corners2)[0]
 					out = cv2.warpPerspective(im, h,(gray.shape[1], gray.shape[0]))
+					
 					gray_out = cv2.cvtColor(out,cv2.COLOR_BGR2GRAY)
-					neg_out = cv2.bitwise_not(gray_out)
-					cv2.imshow('neg mask', neg_out)
-					print neg_out.shape
-					print frame.shape
-					frame = cv2.bitwise_and(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), neg_out)
+					#neg_out = cv2.bitwise_not(gray_out)
+					ret, mask = cv2.threshold(gray_out, 10, 255, cv2.THRESH_BINARY)
+					inv_mask = cv2.bitwise_not(mask)
+
+					frame = cv2.bitwise_and(frame, frame, mask=inv_mask)
 					cv2.imshow('masked frame', frame)
-					#frame = cv2.bitwise_or(frame, out)
-					## create an inverse mask of out 
-					## hit frame with it ie and them  
-					## or the result with out 
-					##use warp perspective to blank out region in frame 
-					cv2.imshow('warp', frame)
+
+					out = cv2.bitwise_and(out, out, mask = mask)
+					#frame = cv2.bitwise_and(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), neg_out)
+					cv2.imshow('masked picture', out)
+					frame = cv2.add(frame, out)
+ 					cv2.imshow('warp', frame)
 			
 		cv2.imshow('calib', frame)			
 	cap.release()
+
 
 def main(argv):
 	global count 
