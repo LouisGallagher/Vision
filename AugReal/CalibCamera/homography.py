@@ -17,25 +17,6 @@ corners_ret = False
 frame = None 
 corners  = None
 
-
-
-# def camera_calibrator(): ## move this functionality into calib_lo
-# 	global count
-# 	global objpoints
-# 	global object_pts
-# 	global imgpoints
-# 	global corners_ret
-# 	global corners
-# 	global criteria
-# 	global frame_ret
-
-# 	if corners_ret == True and frame_ret == True:
-# 		objpoints.append(object_pts)
-# 		#corners = cv2.cornerSubPix(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), corners, (11,11), (-1,-1), criteria)
-# 		imgpoints.append(corners)
-# 		count += 1
-		
-
 def calib_loop():
 	global frame_ret 
 	global corners_ret
@@ -106,7 +87,7 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 					out	 = cv2.warpPerspective(im, h,(gray.shape[1], gray.shape[0]))
 					
 					gray_out = cv2.cvtColor(out,cv2.COLOR_BGR2GRAY)
-					#neg_out = cv2.bitwise_not(gray_out)
+					
 					ret, mask = cv2.threshold(gray_out, 10, 255, cv2.THRESH_BINARY)
 					inv_mask = cv2.bitwise_not(mask)
 
@@ -114,7 +95,7 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 					cv2.imshow('masked frame', frame)
 
 					out = cv2.bitwise_and(out, out, mask = mask)
-					#frame = cv2.bitwise_and(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), neg_out)
+					
 					cv2.imshow('masked picture', out)
 					frame = cv2.add(frame, out)
  					cv2.imshow('warp', frame)
