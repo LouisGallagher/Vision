@@ -10,12 +10,14 @@ object_pts = np.zeros((Height* Width, 3), np.float32)
 object_pts[:,:2] = np.mgrid[0:Height, 0:Width].T.reshape(-1,2)
 
 ## set up calibration dstructures 
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)  ## for sub-pixel refinement
 
 frame_ret = False
 corners_ret = False
 frame = None 
 corners  = None
+
+# this function can be used to calibrate the camera 
 
 def calib_loop():
 	global frame_ret 
@@ -39,11 +41,12 @@ def calib_loop():
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		if frame_ret == True:
-			corners_ret, corners = cv2.findChessboardCorners(gray, (Height, Width), None)
-			cv2.drawChessboardCorners(frame, (Height,Width), corners, corners_ret)
+			corners_ret, corners = cv2.findChessboardCorners(gray, (Height, Width), None) # find chessboard corners in frame
+			cv2.drawChessboardCorners(frame, (Height,Width), corners, corners_ret)        # draw corners on framw 
+			cv2.putText(frame, "When corners found press space to capture sample(q to quit)", (0,60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255))
 			cv2.putText(frame, "captured: {0}/10".format(count), (0,30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255))
 			cv2.imshow('calib', frame)
-			if corners_ret == True and cv2.waitKey(200) ==  32:
+			if corners_ret == True and cv2.waitKey(200) ==  32:  # if corners found add correspondences  
 				objpoints.append(object_pts)
 				#corners = cv2.cornerSubPix(gray, corners, (11,11), (-1,-1), criteria)
 				imgpoints.append(corners)
@@ -51,7 +54,8 @@ def calib_loop():
 
 	cap.release()
 
-def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
+# this function tracks the movement of a chessboard in front of the camera and renders an image over it.
+def homography_loop(mtx, dist, newcamermtx, x, y, w, h, file_path):
 	global frame_ret 
 	global corners_ret
 	global frame
@@ -60,7 +64,7 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 
 
 	board = cv2.imread('Data\pattern.png', cv2.CV_LOAD_IMAGE_GRAYSCALE)
-	im = cv2.imread('Data\space.jpg') #paramterise this 
+	im = cv2.imread(file_path) #'Data\space.jpg'
  	corners_ret, corners = cv2.findChessboardCorners(board, (Height, Width), None)
 	
 	# set up video capture
@@ -75,8 +79,7 @@ def homography_loop(mtx, dist, newcamermtx, x, y, w, h):
 		if frame_ret == True:
 			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 			corners2_ret, corners2 = cv2.findChessboardCorners(gray, (Height, Width), None)
-			cv2.imshow('gray', gray)
-
+			
 			if corners2_ret == True:
 				undist = cv2.undistort(gray, mtx, dist, None, newcamermtx)
 				#undist= undist[y:y+h, x:x+w]
@@ -109,19 +112,34 @@ def main(argv):
 	global imgpoints
 	global objpoints
 
+	try:
+		opts, args = getopt.getopt(argv, "hi:", ["help", "image_path="])
+	except getopt.GetoptError as err:
+		print err
+		sys.exit(2)
+	
+	file_path = None
+
+	for o, a in opts:
+		if o == '-i':
+			file_path = a
+		elif o in ('-h', '--help'):
+			print '-i <image_path> --image_path = <image_path>'
+			sys.exit(2)
+
+
 	cv2.namedWindow('calib' , cv2.WINDOW_AUTOSIZE)	
 	calib_loop()
 
-	if count == 10:				
+	if count == 10:		# i.e. camera calibration achieved		
 		d = (np.shape(frame)[1], np.shape(frame)[0])
-		ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, d, None, None)
+		ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, d, None, None) # get calibration parameters 
 
 		newcamermtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, d, 0, d )
 		x,y,w,h = roi
 		
-		homography_loop(mtx, dist,newcamermtx, x, y, w, h)
+		homography_loop(mtx, dist,newcamermtx, x, y, w, h, file_path) 
 
-	cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	
 
