@@ -95,6 +95,15 @@ def intrinsicsToK(f, k, l, u0, v0):
 		return np.array([[f * k, 0, u0 , 0], [0, f * l, v0 , 0], [0, 0, 1, 0]])
 
 
+# function that simulates a camera with the intrinsics passed in as parameters. The function simulates a cameras view
+# of 3 parallel lines. Position of camera as specified in assignment 
+#
+# parameters:
+# f - the focal length of the camera 
+# k, l - scale factor relating retinal to image coordinates 
+# u0, v0 - principal point 
+# h - height of camera above the ground 
+
 def simulateCamera(f, k, l, u0, v0, h):
 	T = eulerToT(0, 0, h, 0, np.pi/2, -1 * (np.pi/2))	# Transformation matrix
 	K = intrinsicsToK(f, k, l, u0, v0)     				# intrinsics
@@ -107,11 +116,20 @@ def simulateCamera(f, k, l, u0, v0, h):
 	l2 = M.dot(np.hstack([np.array([[i,0,1]]).T for i in range(10000)]))  # generate line 2
 	l3 = M.dot(np.hstack([np.array([[i,-1,1]]).T for i in range(10000)])) # generate line 3
 	
+	# projection of lines onto image plane
 	ax.plot(l1[0,:] / l1[2,:], l1[1,:] /l1[2,:], 'r.')
 	ax.plot(l2[0,:] / l2[2,:], l2[1,:] /l2[2,:], 'b.')
 	ax.plot(l3[0,:] / l3[2,:], l3[1,:] /l3[2,:], 'g.')
 
 	plt.show()
+
+# function that computes the camera matrix using a set of 2D-3D correspondences.
+#
+# parameters: 
+# data- filepath to the file containing the correspondences from which the camera matrix should be approximated.
+#
+# return:
+# A 3*4 camera matrix
 
 def calibrateCamera3D(data):
 	data = np.loadtxt(data)
@@ -132,6 +150,12 @@ def calibrateCamera3D(data):
 
 	return np.reshape(V[:, 11], (3,4))  # reshape into 3*4 camera matrix
 
+# function that takes some exact 2D-3D correspondences and a camera matrix and displays the exact 2D points alongside the 2D points reprojected 
+# using the camera matrix.
+#
+# parameters: 
+# data- a matrix of correspondences 
+# p - camera matrix 
 
 def visualiseCameraCalibration3D(data, p):
 	# show original 2D points
@@ -149,6 +173,16 @@ def visualiseCameraCalibration3D(data, p):
 
 	plt.show()
 
+# function that evaluates the quality of the reprojection of some known points by computing:
+#		- mean
+#		- variance
+#		- min value 
+#		- max value
+# of the euclidean distances between 2D points and their reprojection using the camera matrix p
+#
+# parameters:
+# data- matrix of correspondences 
+# p- camera matrix 
 def evaluateCameraCalibration3D(data, p):
 	Pwrl = data[:, :3]
 	Pwrl = np.append(Pwrl , np.array([[1 for x in range(data.shape[0])]]).T, 1).T

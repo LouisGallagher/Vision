@@ -1,0 +1,20 @@
+1. Rigid Body transformations & camera calibration:
+To to see the functions for part 1 in action load file 'camera.py' into a python interpreter and hit play.
+See comments on the different functions for explanations of parameters etc. functions in this file include:
+	- eulerToR(alpha, beta, gamma):
+	- expToR(w1, w2, w3):
+	- eulerToT(X, Y, Z, alpha, beta, gamma):
+	- expToT(X, Y, Z, w1, w2, w3):
+	- intrinsicsToK(f, k, l, u0, v0):
+	- simulateCamera(f, k, l, u0, v0, h):
+	- calibrateCamera3D(data):
+	- visualiseCameraCalibration3D(data, p):
+	- evaluateCameraCalibration3D(data, p):
+
+2. Planar Homographies
+The planar Homography program can be run by running the file 'homograpy.py' with the -i <path_to_image> flag set to the path of 
+the image you want to project onto the chessboard.
+
+Once running a calibration loop runs. To calibrate the camera move the checkboard in front of your webcam until the corners of the checkboard have been recognised, then press space bar to take a sample. Do this 10 times or press 'q' to quit. 
+
+Once calibration is complete, keep the checkboard in view of the camera(sometimes it helps to stand back from the camera a bit) and the image that was specified should be rendered over the checkboard.
